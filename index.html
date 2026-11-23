@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OKIDOKI JARVIS</title>
+<meta name="description" content="OKIDOKI JARVIS: Android için Türkçe sesli asistan. Ne işe yaradığı, özellikleri, ayarları ve adım adım kurulumu (APK ve Gemma modeli).">
+<style>
+:root{--bg:#f4f7fb;--panel:#fff;--fg:#0e1a2b;--mut:#4c5d73;--acc:#0b63d6;--acc-t:#fff;--soft:#e4eefc;--line:#cfd9e6;--ok:#0a7a3d;--warn:#8a5a00;--warnbg:#fff3d6}
+@media (prefers-color-scheme:dark){:root{--bg:#0a1220;--panel:#111c2e;--fg:#e8eef8;--mut:#9fb0c6;--acc:#5db4ff;--acc-t:#06192e;--soft:#12304d;--line:#22344c;--ok:#5bd48c;--warn:#ffd27a;--warnbg:#3a2c0c;color-scheme:dark}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:18px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--acc)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.skip{position:absolute;left:-999px;top:8px;background:var(--acc);color:var(--acc-t);padding:8px 14px;border-radius:8px;z-index:20}
+.skip:focus{left:8px}
+.wrap{max-width:820px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left)) 0 max(16px,env(safe-area-inset-right))}
+header.top{background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+header.top .wrap{display:flex;gap:14px;align-items:center;justify-content:space-between;padding-block:10px;flex-wrap:wrap}
+.brand{font-weight:800;letter-spacing:.14em;text-decoration:none;color:var(--fg)}
+.brand b{color:var(--acc)}
+nav{display:flex;gap:4px 14px;flex-wrap:wrap;font-size:.9rem}
+nav a{text-decoration:none;color:var(--mut);padding:4px 2px}
+nav a:hover{color:var(--acc)}
+.hero{padding:44px 0 26px}
+.hero h1{font-size:clamp(2rem,7vw,3rem);line-height:1.1;margin:0 0 14px;letter-spacing:-.01em}
+.hero h1 span{color:var(--acc)}
+.hero p{font-size:1.15rem;color:var(--mut);margin:0 0 22px;max-width:60ch}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-block;padding:14px 22px;border-radius:12px;background:var(--acc);color:var(--acc-t);font-weight:700;text-decoration:none;border:2px solid var(--acc)}
+.btn.alt{background:transparent;color:var(--acc)}
+section{padding:30px 0;border-top:1px solid var(--line)}
+h2{font-size:1.6rem;margin:0 0 12px;line-height:1.2;scroll-margin-top:90px}
+h3{font-size:1.15rem;margin:22px 0 6px}
+p{margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h3{margin:0 0 6px;font-size:1.05rem}
+.card p{margin:0;color:var(--mut);font-size:.98rem}
+ol.steps{list-style:none;counter-reset:s;margin:14px 0;padding:0;display:grid;gap:12px}
+ol.steps>li{counter-reset:none;counter-increment:s;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 16px 16px 62px;position:relative}
+ol.steps>li::before{content:counter(s);position:absolute;left:14px;top:14px;width:34px;height:34px;border-radius:50%;background:var(--acc);color:var(--acc-t);display:grid;place-items:center;font-weight:800}
+ol.steps h3{margin:0 0 4px}
+ol.steps p{margin:0 0 8px}
+ol.steps p:last-child{margin:0}
+.note{background:var(--warnbg);color:var(--warn);border-radius:12px;padding:12px 14px;margin:14px 0;font-size:1rem}
+.tip{background:var(--soft);border-radius:12px;padding:12px 14px;margin:14px 0;font-size:1rem}
+code{background:var(--soft);padding:2px 6px;border-radius:6px;font-size:.92em;overflow-wrap:anywhere}
+ul{padding-left:1.2rem;margin:0 0 12px}li{margin:4px 0}
+.tbl{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;min-width:520px;width:100%;background:var(--panel)}
+th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top;font-size:.98rem}
+th{background:var(--soft)}
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:10px 0}
+summary{cursor:pointer;font-weight:700}
+details p{margin:8px 0 0;color:var(--mut)}
+footer{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--mut);font-size:.95rem}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="skip" href="#icerik">İçeriğe geç</a>
+<header class="top"><div class="wrap">
+<a class="brand" href="#">OKIDOKI <b>JARVIS</b></a>
+<nav aria-label="Bölümler"><a href="#ne">Ne işe yarar</a><a href="#ozellikler">Özellikler</a><a href="#indir">İndir</a><a href="#kurulum">Kurulum</a><a href="#ayarlar">Ayarlar</a><a href="#sss">Sorunlar</a></nav>
+</div></header>
+
+<main id="icerik">
+<div class="wrap">
+
+<div class="hero">
+<h1>Telefonunla <span>konuşarak</span> her şeyi yap.</h1>
+<p>OKIDOKI JARVIS, Android telefonlar için Türkçe sesli asistan. "Jarvis" de, söyle: mesaj atsın, arasın, hatırlatsın, hava ve kuru söylesin, fotoğrafa baksın, seninle sohbet etsin. Yapay zekâ tamamen telefonun içinde çalışır.</p>
+<div class="btns"><a class="btn" href="#indir">Uygulamayı indir</a><a class="btn alt" href="#kurulum">Kurulumu oku</a></div>
+</div>
+
+<section id="ne">
+<h2>Bu uygulama ne için yapıldı?</h2>
+<p>Telefonu elle kullanmak zor olan ya da ellerini meşgul eden herkes için: görme zorluğu olanlar, yaşlılar, yolda ya da mutfakta olanlar. Büyük düğmeler, sesli cevaplar ve basit komutlarla telefonu konuşarak kullanmak amaçlandı.</p>
+<p>Uygulamayı <b>OKIDOKI</b> geliştirdi. Kişisel bir projedir, deneme sürümüdür; bazı özellikler hatalı olabilir.</p>
+<div class="tip"><b>Gizlilik:</b> Yapay zekâ modeli (Gemma) telefonda çalışır, sohbetlerin telefondan çıkmaz.</div>
+</section>
+
+<section id="ozellikler">
+<h2>Neler yapabilir?</h2>
+<div class="grid">
+<div class="card"><h3>Sohbet</h3><p>Samimi, esprili Türkçe sohbet. Önceki konuşmayı hatırlar, devam sorularını anlar.</p></div>
+<div class="card"><h3>Mesaj ve arama</h3><p>"Babama mesaj at", WhatsApp ve SMS gönderme, kişiyi arama, gelen aramayı sesle yanıtlama.</p></div>
+<div class="card"><h3>Hatırlatıcılar</h3><p>Alarm, zamanlayıcı, geri sayım, su ve ilaç hatırlatıcısı, takvim okuma.</p></div>
+<div class="card"><h3>Hava ve namaz</h3><p>Bugünkü hava, yarın ve hafta tahmini, namaz vakitleri.</p></div>
+<div class="card"><h3>Kur ve altın</h3><p>Dolar, euro, gram altın, gümüş takibi. "600 TL kaç dolar", fiyat uyarısı.</p></div>
+<div class="card"><h3>Yol ve konum</h3><p>İki yer arası mesafe, yakındaki yerler, durak yaklaşınca haber verme.</p></div>
+<div class="card"><h3>Kamera</h3><p>Fotoğrafı anlatır, yazı okur, barkod okur, yazıyı Türkçeye çevirir.</p></div>
+<div class="card"><h3>Fotoğraf filtreleri</h3><p>Sakal, bıyık, gözlük, şapka, makyaj, takı, taç, oje, saç ve kıyafet rengi (telefonda yapılır).</p></div>
+<div class="card"><h3>Çeviri</h3><p>Birçok dile çeviri, metin ve kameradan çeviri.</p></div>
+<div class="card"><h3>Günlük işler</h3><p>Hesap makinesi, birim çevirme, alışveriş listesi, günlük özet, panodan okuma.</p></div>
+<div class="card"><h3>Eğlence</h3><p>Fıkra, bilmece, ilginç bilgi, moral, yazı-tura, rastgele seçim.</p></div>
+<div class="card"><h3>Bilgi</h3><p>Son depremler, tarihte bugün, haberler, internette soru cevaplama.</p></div>
+</div>
+</section>
+
+<section id="indir">
+<h2>İndir</h2>
+<div class="tbl"><table>
+<tr><th>Ne</th><th>Boyut</th><th>İndir</th></tr>
+<tr><td><b>JARVIS uygulaması</b> (APK)</td><td>yaklaşık 250 MB</td><td><a id="lApk" href="#">APK'yı indir</a><br><small id="apkInfo"></small></td></tr>
+<tr><td><b>Gemma modeli</b> (<code>.litertlm</code>)</td><td>2,59 GB</td><td><a id="lGemma" href="#">Hugging Face'te aç</a> (aşağıdaki adımlara bak)</td></tr>
+</table></div>
+<h3>Gemma modelini Hugging Face'ten indirme</h3>
+<ol class="steps">
+<li><h3>Sayfayı aç</h3><p>Yukarıdaki "Hugging Face'te aç" bağlantısına dokun. Gemma 4 E2B model sayfası açılır. Hesap açman ya da giriş yapman gerekmez.</p></li>
+<li><h3>Dosyalar sekmesine geç</h3><p>Sayfanın üstündeki <b>Files and versions</b> sekmesine dokun.</p></li>
+<li><h3>Doğru dosyayı bul</h3><p>Listede <code>gemma-4-E2B-it.litertlm</code> adlı dosyayı bul (yaklaşık 2,59 GB). Adında <code>gpu</code> ya da <code>Qualcomm</code> geçen dosyaları <b>indirme</b>, onlar başka cihazlar içindir.</p></li>
+<li><h3>İndir</h3><p>Dosyanın sağındaki aşağı ok simgesine dokun. Wi-Fi'de indir, birkaç dakika sürebilir. Dosya İndirilenler klasörüne iner.</p></li>
+<li><h3>Uygulamada göster</h3><p>JARVIS'te <b>Ayarlar → Gemma modelini seç</b>'e dokun ve bu dosyayı seç.</p></li>
+</ol>
+<p>En az Android 8, en az 6 GB RAM önerilir. 4 GB RAM'li telefonlarda model yavaş çalışabilir.</p>
+</section>
+
+<section id="kurulum">
+<h2>Adım adım kurulum</h2>
+<ol class="steps">
+<li><h3>APK'yı indir</h3><p>Telefonda bu sayfayı Chrome'da aç, yukarıdaki "APK'yı indir" bağlantısına dokun. Dosya İndirilenler klasörüne iner.</p></li>
+<li><h3>Yüklemeye izin ver</h3><p>İndirilen dosyaya dokun. Telefon "bu kaynaktan yükleme engellendi" derse <b>Ayarlar</b>'a dokun ve Chrome için <b>Bu kaynaktan izin ver</b>'i aç, geri dön.</p></li>
+<li><h3>Yükle</h3><p><b>Yükle</b>'ye dokun. Bir güvenlik uyarısı çıkarsa <b>Yine de yükle</b> de. Uygulama Play Store'dan gelmediği için telefon uyarır, bu normal.</p></li>
+<li><h3>Uygulamayı aç ve izinleri ver</h3><p>İlk açılışta JARVIS kendini tanıtır. İzinleri sırayla ver: mikrofon, kamera, kişiler, konum, bildirim, telefon, SMS. Bir izni vermezsen sadece o özellik çalışmaz.</p></li>
+<li><h3>Gemma modelini seç</h3><p>Gemma modelini indir (İndir bölümündeki adımlar, 2,59 GB, Wi-Fi'de indirmen iyi olur). Uygulamada <b>Ayarlar → Gemma modelini seç</b>'e dokun, indirdiğin <code>.litertlm</code> dosyasını göster. Kopyalama bitince İndirilenler'deki dosyayı silebilirsin. İlk yükleme birkaç dakika sürer.</p>
+</li>
+<li><h3>Telefon işlerine izin ver</h3><p>Mesaj gönderme gibi işlerin çalışması için <b>Ayarlar → Erişilebilirlik → JARVIS</b>'i aç. Bildirimleri okuması ve cevaplaması için <b>Bildirim erişimi</b>'ni de aç.</p></li>
+<li><h3>"Jarvis" diyerek uyandır (isteğe bağlı)</h3><p>Uygulamada <b>"NOVA diyerek uyandır"</b> anahtarını aç. Arka planda dinler, telefonun bildirimlerinde "JARVIS seni dinliyor" yazar. Pil harcar.</p></li>
+</ol>
+
+<h3>Xiaomi / Redmi (MIUI) için şart</h3>
+<p>MIUI, uygulamaları arka planda kapatmayı sever. JARVIS'in düzgün çalışması için:</p>
+<ul>
+<li><b>Son uygulamalar</b> ekranında JARVIS kartını basılı tut, <b>kilitle</b>. Yukarı kaydırıp kapatma.</li>
+<li><b>Ayarlar → Uygulamalar → İzinler → Otomatik başlat</b>'ta JARVIS'i aç.</li>
+<li><b>Ayarlar → Uygulamalar → JARVIS → Pil tasarrufu</b>: <b>Kısıtlama yok</b> seç.</li>
+<li>Güncellemeden sonra mesaj işleri çalışmazsa Erişilebilirlik'te JARVIS'i kapatıp yeniden aç.</li>
+</ul>
+
+<h3>Güncelleme</h3>
+<p>Yeni sürüm çıkınca uygulama açılışta bunu fark edip indirir, "Yeni sürüm hazır" bildirimi gösterir. Bildirime dokun, kurulum ekranında <b>Güncelle</b>'ye bas. Ayarların ve notların silinmez. Elle kontrol için <b>Ayarlar → Güncelleme → Güncellemeyi kontrol et</b>.</p>
+</section>
+
+<section id="ayarlar">
+<h2>Ayarlar</h2>
+<div class="tbl"><table>
+<tr><th>Ayar</th><th>Ne yapar</th></tr>
+<tr><td>Gemma modelini seç</td><td>Telefondaki yapay zekâ modelini bağlar.</td></tr>
+<tr><td>Erişilebilirlik modu</td><td>Büyük düğmeler ve sade ekran.</td></tr>
+<tr><td>Soruları internetten cevapla</td><td>Bilgi sorularında internetten arar.</td></tr>
+<tr><td>"NOVA" diyerek uyandır</td><td>Arka planda dinler. Komut: "Jarvis, hava nasıl".</td></tr>
+<tr><td>Konum hatırlatıcıları</td><td>Bir yere yaklaşınca haber verir. Çalışması için konum iznini <b>Her zaman izin ver</b> yapman gerekir.</td></tr>
+<tr><td>Güncelleme</td><td>GitHub deposundan yeni sürümü bulur ve kurar.</td></tr>
+<tr><td>Son kapanmalar</td><td>Uygulama beklenmedik kapandıysa nedenini gösterir.</td></tr>
+</table></div>
+</section>
+
+<section id="sss">
+<h2>Sık sorunlar</h2>
+<details><summary>Uygulama kendi kendine kapanıyor</summary><p>MIUI'nin kapattığı olur. Yukarıdaki MIUI adımlarını yap: kartı kilitle, otomatik başlatmayı aç, pili kısıtlama yok yap.</p></details>
+<details><summary>Mikrofon sürekli açılıp kapanıyor</summary><p>Uygulamayı en son sürüme güncelle. Hâlâ oluyorsa "NOVA diyerek uyandır"ı kapatıp açmayı dene.</p></details>
+<details><summary>Ekran kapalıyken WhatsApp mesajı gitmiyor</summary><p>Telefonda ekran kilidi (desen, PIN) varsa Android, ekran kapalıyken WhatsApp'ın açılmasına izin vermez. Ekranı açıp tekrar dene.</p></details>
+<details><summary>"Cevap veremiyorum, model yüklenmedi" diyor</summary><p>Gemma modelini seçmedin ya da yüklenemedi. Ayarlar'dan modeli yeniden seç.</p></details>
+<details><summary>Altın ve döviz fiyatı farklı çıkıyor</summary><p>Altın fiyatı uluslararası ons fiyatından hesaplanır, yaklaşıktır. Kuyumcu fiyatından farklı olabilir.</p></details>
+<details><summary>Play Store'da yok mu?</summary><p>Henüz yok. Şimdilik bu sayfadan APK olarak kuruluyor.</p></details>
+</section>
+
+</div>
+</main>
+
+<footer><div class="wrap">
+<p><b>OKIDOKI JARVIS</b> deneme sürümüdür. Hatalı cevap verebilir. Sağlık, hukuk ve para konularında verdiği bilgiyi mutlaka bir uzmana danış. Acil durumda 112'yi ara.</p>
+<p>Geliştirici: OKIDOKI</p>
+</div></footer>
+
+<script>
+/* Depo bilgisi: APK bağlantısı GitHub'daki en son sürümden otomatik alınır, siteyi değiştirmen gerekmez. */
+var REPO = "yenilefraim068-a11y/okidoki-jarvis";
+var GEMMA_URL = "https://huggingface.co/litert-community/gemma-4-e2b-it-litert-lm/tree/main";
+var apk = document.getElementById("lApk"), info = document.getElementById("apkInfo");
+document.getElementById("lGemma").href = GEMMA_URL;
+apk.href = "https://github.com/" + REPO + "/releases/latest";
+fetch("https://api.github.com/repos/" + REPO + "/releases/latest")
+  .then(function (r) { return r.ok ? r.json() : null; })
+  .then(function (j) {
+    if (!j) return;
+    var a = (j.assets || []).filter(function (x) { return /\.apk$/i.test(x.name); })[0];
+    if (!a) return;
+    apk.href = a.browser_download_url;
+    var mb = Math.round(a.size / 1048576);
+    var d = new Date(j.published_at).toLocaleDateString("tr-TR");
+    info.textContent = "Son sürüm: " + j.tag_name + " (" + d + ", " + mb + " MB)";
+  })
+  .catch(function () {});
+</script>
+</body>
+</html>
