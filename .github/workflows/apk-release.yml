@@ -1,0 +1,40 @@
+name: apk-release
+on:
+  push:
+    branches: [apk-upload]
+    paths: ['uploads/**/DONE']
+permissions:
+  contents: write
+concurrency:
+  group: apk-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: apk-upload
+      - name: Birlestir ve yayinla
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          for dir in uploads/*/; do
+            [ -f "${dir}DONE" ] || continue
+            tag=$(basename "$dir")
+            name=$(cat "${dir}NAME")
+            want=$(cat "${dir}DONE")
+            have=$(ls "${dir}"part-* | wc -l)
+            if [ "$want" != "$have" ]; then echo "Parca sayisi uyusmuyor: $want / $have"; exit 1; fi
+            cat $(ls "${dir}"part-* | sort) > "/tmp/$name"
+            ls -l "/tmp/$name"
+            if gh release view "$tag" >/dev/null 2>&1; then
+              gh release upload "$tag" "/tmp/$name" --clobber
+              gh release edit "$tag" --draft=false --latest
+            else
+              gh release create "$tag" "/tmp/$name" --title "JARVIS $tag" --notes "JARVIS surum $tag" --latest
+            fi
+          done
+          git push origin --delete apk-upload || true
