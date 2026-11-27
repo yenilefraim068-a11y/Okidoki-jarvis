@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>JARVIS Yönetim</title>
+<style>
+:root{--bg:#f4f7fb;--panel:#fff;--fg:#0e1a2b;--mut:#4c5d73;--acc:#0b63d6;--acc-t:#fff;--line:#cfd9e6;--ok:#0a7a3d;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#0a1220;--panel:#111c2e;--fg:#e8eef8;--mut:#9fb0c6;--acc:#5db4ff;--acc-t:#06192e;--line:#22344c;--ok:#5bd48c;--bad:#ff8a80;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:18px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:20px max(16px,env(safe-area-inset-left))}
+main{max-width:640px;margin:0 auto}
+h1{font-size:1.6rem;margin:0 0 6px}
+p{margin:0 0 14px;color:var(--mut)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+label{display:block;font-weight:700;margin:12px 0 4px}
+input[type=text],input[type=password],input[type=file]{width:100%;font:inherit;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+button{font:inherit;font-weight:700;padding:14px 20px;border-radius:12px;border:0;background:var(--acc);color:var(--acc-t);cursor:pointer;width:100%;margin-top:14px}
+button:disabled{opacity:.5}
+progress{width:100%;height:18px;margin-top:12px}
+#log,#alog{white-space:pre-wrap;font-size:1rem;margin-top:12px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+a{color:var(--acc)}
+code{word-break:break-all}
+details{margin:8px 0}summary{cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+<main>
+<h1>JARVIS Yönetim</h1>
+<p>Yeni APK'yı buradan yükle. Dosya 12 parça halinde gider, GitHub birleştirip tek APK olarak yayınlar. Gereken her şeyi bu sayfa kendisi kurar. Ana sitedeki indirme düğmesi ve uygulamadaki güncelleme yeni sürümü otomatik görür.</p>
+
+<div class="card">
+<details>
+<summary>İlk kez mi? Erişim anahtarı nasıl alınır</summary>
+<ol>
+<li>github.com'a giriş yap. Sağ üstte profil resmin → <b>Settings</b>.</li>
+<li>En altta <b>Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</b>.</li>
+<li>Ad: <code>jarvis-yukle</code>. Süre: 1 yıl.</li>
+<li><b>Repository access</b>: <b>Only select repositories</b>, <code>okidoki-jarvis</code> seç.</li>
+<li><b>Permissions → Repository permissions</b>: <b>Contents</b> → <b>Read and write</b>, <b>Workflows</b> → <b>Read and write</b>.</li>
+<li><b>Generate token</b> de. Çıkan <code>github_pat_...</code> yazısını kopyala, aşağıya yapıştır. Bir daha gösterilmez.</li>
+</ol>
+</details>
+</div>
+
+<div class="card">
+<label for="repo">Depo</label>
+<input id="repo" type="text" value="yenilefraim068-a11y/okidoki-jarvis" autocomplete="off">
+<label for="tok">Erişim anahtarı (bu tarayıcıda saklanır)</label>
+<input id="tok" type="password" placeholder="github_pat_..." autocomplete="off">
+<label for="tag">Sürüm numarası (build.gradle'daki versionCode, örn. 90)</label>
+<input id="tag" type="text" inputmode="numeric" placeholder="90" autocomplete="off">
+<label for="apk">APK dosyası</label>
+<input id="apk" type="file">
+<button id="go" type="button">Yayınla</button>
+<progress id="pr" value="0" max="100" hidden></progress>
+<div id="log" role="status" aria-live="polite"></div>
+</div>
+
+<div class="card">
+<h2 style="font-size:1.2rem;margin:0 0 6px">Yapay zekâ anahtarı (bir kez gir)</h2>
+<p>Buraya yazdığın anahtar uygulamalara kendiliğinden gelir. Her yeni sürümde tekrar girmene gerek yok. Yukarıdaki depo ve erişim anahtarı dolu olmalı.</p>
+<label for="ak">Anahtar</label>
+<input id="ak" type="password" placeholder="AIza..." autocomplete="off">
+<button id="aks" type="button">Anahtarı kaydet</button>
+<div id="alog" role="status" aria-live="polite"></div>
+</div>
+
+<p><a href="./">← Siteye dön</a></p>
+</main>
+<script>
+var PARCA = 12;      // APK kaç parçaya bölünsün
+var DENEME = 4;      // her parça için deneme sayısı (bağlantı koparsa)
+
+var $ = function (i) { return document.getElementById(i); };
+function save(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+$("tok").value = load("jv_tok"); if (load("jv_repo")) $("repo").value = load("jv_repo");
+function say(t, cls) { $("log").className = cls || ""; $("log").textContent = t; }
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+function api(method, url, token, body) {
+  return fetch(url, {
+    method: method,
+    headers: { "Authorization": "Bearer " + token, "Accept": "application/vnd.github+json", "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+    cache: "no-store"
+  });
+}
+
+// Blob -> base64 (bellek dostu)
+function toB64(blob) {
+  return new Promise(function (res, rej) {
+    var fr = new FileReader();
+    fr.onload = function () { var s = String(fr.result); res(s.slice(s.indexOf(",") + 1)); };
+    fr.onerror = function () { rej(fr.error || new Error("Dosya okunamadı.")); };
+    fr.readAsDataURL(blob);
+  });
+}
+
+async function sha256(bufOrBlob) {
+  var buf = bufOrBlob instanceof Blob ? await bufOrBlob.arrayBuffer() : bufOrBlob;
+  var h = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(h)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+}
+
+// Depoya tek dosya yazar (api.github.com; tarayıcıdan çalışır). Koparsa tekrar dener.
+async function putFile(repo, tok, path, b64, msg) {
+  var url = "https://api.github.com/repos/" + repo + "/contents/" + path;
+  var last;
+  for (var i = 1; i <= DENEME; i++) {
+    try {
+      var sha;
+      var g = await api("GET", url, tok);
+      if (g.ok) sha = (await g.json()).sha;
+      var body = { message: msg, content: b64 };
+      if (sha) body.sha = sha;
+      var r = await api("PUT", url, tok, body);
+      if (r.ok) return;
+      if (r.status === 401 || r.status === 403) throw Object.assign(new Error("Erişim anahtarı geçersiz ya da izni yok (Contents: Read and write olmalı)."), { stop: true });
+      if (r.status === 404) throw Object.assign(new Error("Depo bulunamadı ya da anahtar bu depoya yetkili değil."), { stop: true });
+      last = new Error("GitHub reddetti (" + r.status + ").");
+    } catch (e) {
+      if (e.stop) throw e;
+      last = e;
+    }
+    await wait(1500 * i);
+  }
+  throw last || new Error("Gönderilemedi.");
+}
+
+// Dosyayı parçalara bölüp gönderir, en son manifest yazılır (GitHub birleştirmeyi o başlatır)
+async function sendInParts(repo, tok, blob, manifest, onProgress) {
+  var dir = "incoming/" + manifest.tag + "-" + Date.now();
+  var size = Math.max(1, Math.ceil(blob.size / PARCA));
+  var parts = Math.max(1, Math.ceil(blob.size / size));
+  manifest.parts = parts;
+  manifest.size = blob.size;
+  manifest.sha256 = await sha256(blob);
+  for (var i = 0; i < parts; i++) {
+    var no = String(i + 1).padStart(2, "0");
+    onProgress(i, parts);
+    var b64 = await toB64(blob.slice(i * size, (i + 1) * size));
+    await putFile(repo, tok, dir + "/part" + no, b64, "parça " + no + "/" + parts + " (" + manifest.name + ")");
+  }
+  onProgress(parts, parts);
+  await putFile(repo, tok, dir + "/manifest.json", btoa(JSON.stringify(manifest)), "birleştir: " + manifest.name);
+}
+
+// Yayın çıkana kadar bekler (en fazla ~4 dk)
+async function waitForAsset(repo, tok, tag, name) {
+  for (var i = 0; i < 24; i++) {
+    await wait(10000);
+    try {
+      var r = await api("GET", "https://api.github.com/repos/" + repo + "/releases/tags/" + encodeURIComponent(tag), tok);
+      if (r.ok) {
+        var rel = await r.json();
+        if ((rel.assets || []).some(function (a) { return a.name === name && a.state === "uploaded"; })) return true;
+      }
+    } catch (e) {}
+  }
+  return false;
+}
+
+
+// Birleştirme düzeneği: depoda yoksa bu sayfa kendisi kurar (bir kere)
+var WF_PATH = ".github/workflows/jarvis-birlestir.yml";
+var WF = "name: APK birlestir ve yayinla\n\non:\n  push:\n    paths:\n      - 'incoming/**/manifest.json'\n\npermissions:\n  contents: write\n\nconcurrency:\n  group: jarvis-yayin\n  cancel-in-progress: false\n\njobs:\n  yayinla:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n\n      - name: Parcalari birlestir ve yayinla\n        env:\n          GH_TOKEN: ${{ github.token }}\n        run: |\n          set -euo pipefail\n          shopt -s nullglob\n          found=0\n          for m in incoming/*/manifest.json; do\n            found=1\n            d=$(dirname \"$m\")\n            kind=$(jq -r .kind \"$m\")\n            tag=$(jq -r .tag \"$m\")\n            name=$(jq -r .name \"$m\")\n            parts=$(jq -r .parts \"$m\")\n            sum=$(jq -r .sha256 \"$m\")\n            out=\"$RUNNER_TEMP/$name\"\n            : > \"$out\"\n            for i in $(seq 1 \"$parts\"); do\n              cat \"$d/part$(printf %02d \"$i\")\" >> \"$out\"\n            done\n            echo \"$sum  $out\" | sha256sum -c -\n\n            if [ \"$kind\" = \"cfg\" ]; then\n              gh release view cfg >/dev/null 2>&1 || \\\n                gh release create cfg --prerelease --title cfg --notes \"ayar\"\n              gh release upload cfg \"$out\" --clobber\n            else\n              gh release view \"$tag\" >/dev/null 2>&1 || \\\n                gh release create \"$tag\" --title \"JARVIS $tag\" --notes \"JARVIS sürüm $tag\" --latest\n              gh release upload \"$tag\" \"$out\" --clobber\n            fi\n            echo \"Yayinlandi: $tag / $name\"\n            git rm -rq \"$d\"\n          done\n\n          if [ \"$found\" = 1 ]; then\n            git config user.name \"github-actions[bot]\"\n            git config user.email \"41898283+github-actions[bot]@users.noreply.github.com\"\n            git commit -m \"parcalar temizlendi [skip ci]\" && git push || true\n          fi\n";
+function b64utf8(t) { return btoa(unescape(encodeURIComponent(t))); }
+async function ensureWorkflow(repo, tok) {
+  var url = "https://api.github.com/repos/" + repo + "/contents/" + WF_PATH;
+  var g = await api("GET", url, tok);
+  if (g.ok) {
+    var cur = await g.json();
+    var now = decodeURIComponent(escape(atob((cur.content || "").replace(/\n/g, ""))));
+    if (now === WF) return false;
+    var r = await api("PUT", url, tok, { message: "birleştirme düzeneği güncellendi", content: b64utf8(WF), sha: cur.sha });
+  } else if (g.status === 404) {
+    var r = await api("PUT", url, tok, { message: "birleştirme düzeneği kuruldu", content: b64utf8(WF) });
+  } else if (g.status === 401 || g.status === 403) {
+    throw new Error("Erişim anahtarı geçersiz ya da izni yok.");
+  } else throw new Error("Depoya ulaşılamadı (" + g.status + ").");
+  if (r.status === 403 || r.status === 404) throw new Error("Anahtarın 'Workflows: Read and write' izni yok. GitHub'da anahtarı düzenleyip bu izni ekle (Contents'in altında).");
+  if (!r.ok) throw new Error("Birleştirme düzeneği kurulamadı (" + r.status + ").");
+  await wait(5000);   // GitHub'ın yeni düzeneği tanıması için
+  return true;
+}
+
+$("go").onclick = async function () {
+  var repo = $("repo").value.trim(), tok = $("tok").value.trim(), tag = $("tag").value.trim();
+  var f = $("apk").files[0];
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) return say("Depo adı yanlış. Örnek: kullanici/depo", "bad");
+  if (!tok) return say("Erişim anahtarını yapıştır.", "bad");
+  if (!/^\d+$/.test(tag)) return say("Sürüm numarası sadece sayı olmalı (örn. 90).", "bad");
+  if (!f) return say("Önce APK dosyasını seç.", "bad");
+  save("jv_tok", tok); save("jv_repo", repo);
+
+  var name = f.name.replace(/[^\w.\-]/g, "_");
+  if (!/\.apk$/i.test(name)) name = name.replace(/\.(zip|bin)$/i, "") + ".apk";
+
+  $("go").disabled = true; $("pr").hidden = false; $("pr").value = 0;
+  try {
+    say("Hazırlanıyor…");
+    if (await ensureWorkflow(repo, tok)) say("Birleştirme düzeneği kuruldu (ilk sefer).");
+    await sendInParts(repo, tok, f, { kind: "apk", tag: tag, name: name }, function (done, total) {
+      $("pr").value = done * 100 / total;
+      say(done < total ? "Parça " + (done + 1) + "/" + total + " gönderiliyor… sayfayı kapatma." : "Parçalar gitti, GitHub birleştiriyor…");
+    });
+    say("Parçalar gitti. GitHub birleştirip yayınlıyor (1–3 dk)…");
+    var ok = await waitForAsset(repo, tok, tag, name);
+    say(ok ? "Bitti! Sürüm " + tag + " yayında: " + name
+           : "Parçalar gitti ama yayın henüz görünmüyor. GitHub'da Actions sekmesine bak.", ok ? "ok" : "bad");
+  } catch (e) {
+    say("Olmadı: " + e.message + "\nTekrar Yayınla'ya basabilirsin.", "bad");
+  }
+  $("go").disabled = false;
+};
+
+$("aks").onclick = async function () {
+  var repo = $("repo").value.trim(), tok = $("tok").value.trim(), k = $("ak").value.trim();
+  var L = function (t, c) { $("alog").className = c || ""; $("alog").textContent = t; };
+  if (!tok) return L("Üstteki erişim anahtarını yapıştır.", "bad");
+  if (k.length < 10) return L("Anahtar çok kısa.", "bad");
+  $("aks").disabled = true;
+  try {
+    save("jv_tok", tok); save("jv_repo", repo);
+    L("Hazırlanıyor…");
+    await ensureWorkflow(repo, tok);
+    var enc = btoa(k.split("").reverse().join(""));   // uygulamanın beklediği biçim (değişmedi)
+    await sendInParts(repo, tok, new Blob([enc], { type: "text/plain" }), { kind: "cfg", tag: "cfg", name: "jv.dat" }, function () {
+      L("Gönderiliyor…");
+    });
+    $("ak").value = "";
+    L("Kaydedildi. GitHub birkaç dakikada yayınlar, uygulamalar birkaç saat içinde alır.", "ok");
+  } catch (e) { L("Olmadı: " + e.message, "bad"); }
+  $("aks").disabled = false;
+};
+</script>
+</body>
+</html>
